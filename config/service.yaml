@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: chart-verifier-infra
+spec:
+  selector:
+    environment: prod
+  ports:
+    - protocol: TCP
+      port: 7080

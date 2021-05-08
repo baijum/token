@@ -1,0 +1,17 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: token
+  namespace: chart-verifier-infra
+spec:
+  host: token-chart-verifier-infra.apps.ocpappsvc-osd.zn6c.p1.openshiftapps.com
+  to:
+    kind: Service
+    name: my-service
+    weight: 100
+  port:
+    targetPort: 7080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

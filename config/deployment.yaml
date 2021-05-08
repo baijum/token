@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: chart-verifier-infra
+  labels:
+    environment: prod
+spec:
+  selector:
+    matchLabels:
+      environment: prod
+  template:
+    metadata:
+      labels:
+        environment: prod
+    spec:
+      serviceAccountName: chart-verifier-admin
+      containers:
+        - name: "token"
+          image: "quay.io/baijum/token:latest"
+          ports:
+            - containerPort: 7080
