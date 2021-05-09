@@ -21,3 +21,9 @@ rules:
       - 'clusterrolebindings'
     verbs:
       - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - 'secrets'
+    verbs:
+      - '*'

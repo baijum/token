@@ -115,7 +115,6 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 
 		found := false
 		for i := 0; i < 6; i++ {
-			time.Sleep(10 * time.Second)
 			sa, err = clientset.CoreV1().ServiceAccounts(namespace).Get(ctx, sa.Name, metav1.GetOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Error retrieving service account: %v", err.Error())
@@ -127,6 +126,7 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 				found = true
 				break
 			}
+			time.Sleep(10 * time.Second)
 		}
 		if found == false {
 			log.Printf("[ERROR] Error creating secret: %v", err.Error())
