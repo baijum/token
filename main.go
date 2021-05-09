@@ -108,7 +108,7 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/api/token/{id}", TokenHandler).Methods("GET", "DELETE").Queries("repository", "{repository}")
+	r.HandleFunc("/api/token/{id}", TokenHandler).Methods("GET", "DELETE")
 
 	n := negroni.Classic()
 	n.UseHandler(r)
