@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -13,10 +14,16 @@ import (
 	"github.com/urfave/negroni"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+type TokenResponse struct {
+	Namespace string `json:"namespace"`
+	Token     string `json:"token"`
+}
 
 func ValidateRequest(token string) bool {
 	// Trigger a workflow_dispatch action in the repository using the token.
@@ -96,26 +103,61 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("no auth required\n"))
 	} else {
-		ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		ctx := context.TODO()
+
+		/*
+			ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+			if err != nil {
+				log.Printf("[ERROR] Error reading namespace file: %v", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			namespace := string(ns)
+		*/
+
+		tr := &TokenResponse{}
+
+		ns := &corev1.Namespace{}
+		ns.GenerateName = "chart-verifier-ci-" + id + "-"
+		ns, err = clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		if err != nil {
-			log.Printf("[ERROR] Error reading namespace file: %v", err.Error())
+			log.Printf("[ERROR] Error creating namespace: %v", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		namespace := string(ns)
-		ctx := context.TODO()
+
+		tr.Namespace = ns.Name
+
 		sa := &corev1.ServiceAccount{}
-		sa.GenerateName = "chart-verifier-ci-" + id + "-"
-		sa, err = clientset.CoreV1().ServiceAccounts(namespace).Create(ctx, sa, metav1.CreateOptions{})
+		sa.Name = ns.Name
+		sa, err = clientset.CoreV1().ServiceAccounts(ns.Name).Create(ctx, sa, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Error creating service account: %v", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
+		role := &rbacv1.Role{}
+		role.Name = "chart-verifier-ci-" + id
+		role, err = clientset.RbacV1().Roles(ns.Name).Create(ctx, role, metav1.CreateOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Error creating role: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		roleBinding := &rbacv1.RoleBinding{}
+		roleBinding.Name = "chart-verifier-ci-" + id
+		roleBinding, err = clientset.RbacV1().RoleBindings(ns.Name).Create(ctx, roleBinding, metav1.CreateOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Error creating role binding: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		found := false
 		for i := 0; i < 6; i++ {
-			sa, err = clientset.CoreV1().ServiceAccounts(namespace).Get(ctx, sa.Name, metav1.GetOptions{})
+			sa, err = clientset.CoreV1().ServiceAccounts(ns.Name).Get(ctx, sa.Name, metav1.GetOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Error retrieving service account: %v", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -134,15 +176,23 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, s := range sa.Secrets {
-			secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, s.Name, metav1.GetOptions{})
+			secret, err := clientset.CoreV1().Secrets(ns.Name).Get(ctx, s.Name, metav1.GetOptions{})
 			if err != nil {
 				log.Printf("[ERROR] Error retrieving secret: %v", err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			if secret.Type == "kubernetes.io/service-account-token" {
+				tr.Token = string(secret.Data["token"])
+				out, err := json.Marshal(tr)
+				if err != nil {
+					log.Printf("[ERROR] Error marshalling: %v", err.Error())
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
 				w.WriteHeader(http.StatusOK)
-				w.Write(secret.Data["token"])
+				w.Write(out)
 				return
 			}
 

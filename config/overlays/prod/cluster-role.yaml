@@ -16,9 +16,27 @@ rules:
     verbs:
       - '*'
   - apiGroups:
-      - ""
+      - "rbac.authorization.k8s.io"
+    resources:
+      - 'clusterroles'
+    verbs:
+      - '*'
+  - apiGroups:
+      - "rbac.authorization.k8s.io"
     resources:
       - 'clusterrolebindings'
+    verbs:
+      - '*'
+  - apiGroups:
+      - "*"
+    resources:
+      - 'roles'
+    verbs:
+      - '*'
+  - apiGroups:
+      - "*"
+    resources:
+      - 'rolebindings'
     verbs:
       - '*'
   - apiGroups:
