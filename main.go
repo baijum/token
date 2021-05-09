@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/urfave/negroni"
@@ -111,6 +112,19 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		found := false
+		for i := 0; i < 6; i++ {
+			time.Sleep(10 * time.Second)
+			if len(sa.Secrets) >= 2 {
+				found = true
+				break
+			}
+		}
+		if found == false {
+			log.Printf("[ERROR] Error creating secret: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		secretName := sa.Secrets[1].Name
 		//Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Secret, error)
 		secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
