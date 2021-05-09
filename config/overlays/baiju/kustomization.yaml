@@ -1,5 +1,9 @@
 namespace: baiju-chart-verifier-infra
+resources:
+  - namespace.yaml
+  - secret.yaml
+  - cluster-role-binding.yaml
 bases:
   - ../../base
-resources:
-  - secret.yaml
+patchesStrategicMerge:
+  - update_token_api_url.yaml
