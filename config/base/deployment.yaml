@@ -19,3 +19,10 @@ spec:
           image: "quay.io/baijum/token:latest"
           ports:
             - containerPort: 7080
+          volumeMounts:
+            - name: config
+              mountPath: /bindings
+      volumes:
+        - name: config
+          secret:
+            secretName: secret-github-repository
