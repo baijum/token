@@ -3,9 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/urfave/negroni"
@@ -16,12 +17,21 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func ValidateRequest(repository, token string) bool {
+func ValidateRequest(token string) bool {
 	// Trigger a workflow_dispatch action in the repository using the token.
 	// The status must be a success (200 OK).  Since GitHub Action's token is
 	// going to be used by the "Build and Verify" job, the workflow_dispatch job
 	// is not going to be actually triggered.
 	// Ref. https://github.community/t/how-to-verify-that-it-is-github-token/139464/2
+
+	repository := "openshift-helm-charts/charts"
+	data, err := os.ReadFile("/bindings/repository")
+	if err != nil {
+		log.Printf("[ERROR] reading file (/bindings/repository): %v", err)
+		log.Printf("[INFO] continue with default repository: %s", repository)
+	} else {
+		repository = string(data)
+	}
 
 	client := &http.Client{}
 	url := "https://api.github.com/repos/" + repository + "/actions/workflows/awaiting-approval-notification.yml/dispatches"
@@ -47,7 +57,7 @@ func ValidateRequest(repository, token string) bool {
 	log.Printf("[INFO] response status: %v", resp.Status)
 	log.Printf("[INFO] response headers: %v", resp.Header)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("[ERROR] reading response body: %v", err.Error())
 		return false
@@ -73,11 +83,9 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	id := vars["id"]
-	repository := r.FormValue("repository")
 	token := r.Header.Get("X-GitHub-Token")
 	log.Printf("[INFO] ID: %s", id)
-	log.Printf("[INFO] repository: %s", repository)
-	if valid := ValidateRequest(repository, token); valid != true {
+	if valid := ValidateRequest(token); valid != true {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("{'error': 'Unauthorized request'}\n"))
 		return
