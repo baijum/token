@@ -1,0 +1,6 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: token
+spec:
+  host: baiju-chart-verifier-infra.apps.ocpappsvc-osd.zn6c.p1.openshiftapps.com

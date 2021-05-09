@@ -1,0 +1,5 @@
+namespace: baiju-chart-verifier-infra
+bases:
+  - ../../base
+resources:
+  - secret.yaml

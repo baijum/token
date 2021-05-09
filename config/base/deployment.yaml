@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app
-  namespace: chart-verifier-infra
   labels:
     environment: prod
 spec:

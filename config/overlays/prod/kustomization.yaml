@@ -1,0 +1,8 @@
+namespace: chart-verifier-infra
+#namespace: prod-chart-verifier-infra
+bases:
+  - ../../base
+resources:
+  - secret.yaml
+patchesStrategicMerge:
+  - update_token_api_url.yaml
