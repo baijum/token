@@ -1,0 +1,23 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: baiju-chart-verifier-admin
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - 'namespaces'
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - 'serviceaccounts'
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - 'clusterrolebindings'
+    verbs:
+      - '*'

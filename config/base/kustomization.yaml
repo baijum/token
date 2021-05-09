@@ -1,6 +1,5 @@
 resources:
   - service-account.yaml
-  - cluster-role.yaml
   - deployment.yaml
   - route.yaml
   - service.yaml

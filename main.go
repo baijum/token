@@ -94,15 +94,34 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("no auth required\n"))
 	} else {
+		ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		if err != nil {
+			log.Printf("[ERROR] Error reading namespace file: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		namespace := string(ns)
 		ctx := context.TODO()
 		sa := &corev1.ServiceAccount{}
 		sa.GenerateName = "chart-verifier-ci-" + id + "-"
-		sa, err := clientset.CoreV1().ServiceAccounts("chart-verifier-infra").Create(ctx, sa, metav1.CreateOptions{})
+		sa, err = clientset.CoreV1().ServiceAccounts(namespace).Create(ctx, sa, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Error creating service account: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+
+		secretName := sa.Secrets[1].Name
+		//Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Secret, error)
+		secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Error retrieving secret: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(sa.Name))
+		w.Write(secret.Data["token"])
 	}
 }
 func main() {
