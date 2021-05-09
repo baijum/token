@@ -51,6 +51,7 @@ func ValidateRequest(token string) bool {
 	}
 
 	if resp.StatusCode == 204 {
+		log.Printf("[DEBUG] GITHUB_TOKEN sucessfuly verified.")
 		return true
 	}
 
@@ -115,6 +116,13 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		found := false
 		for i := 0; i < 6; i++ {
 			time.Sleep(10 * time.Second)
+			sa, err = clientset.CoreV1().ServiceAccounts(namespace).Get(ctx, sa.Name, metav1.GetOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Error retrieving service account: %v", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
 			if len(sa.Secrets) >= 2 {
 				found = true
 				break
@@ -125,17 +133,22 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		secretName := sa.Secrets[1].Name
-		//Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Secret, error)
-		secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-		if err != nil {
-			log.Printf("[ERROR] Error retrieving secret: %v", err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		for _, s := range sa.Secrets {
+			secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, s.Name, metav1.GetOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Error retrieving secret: %v", err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if secret.Type == "kubernetes.io/service-account-token" {
+				w.WriteHeader(http.StatusOK)
+				w.Write(secret.Data["token"])
+				return
+			}
 
-		w.WriteHeader(http.StatusOK)
-		w.Write(secret.Data["token"])
+		}
+		log.Printf("[ERROR] Secret not found: %v", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 func main() {
