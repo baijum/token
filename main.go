@@ -137,7 +137,13 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		role := &rbacv1.Role{}
+		role := &rbacv1.Role{
+			Rules: []rbacv1.PolicyRule{
+				{
+					Verbs:     []string{"*"},
+					APIGroups: []string{"*"},
+					Resources: []string{"*"}},
+			}}
 		role.Name = "chart-verifier-ci-" + id
 		role, err = clientset.RbacV1().Roles(ns.Name).Create(ctx, role, metav1.CreateOptions{})
 		if err != nil {
