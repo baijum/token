@@ -50,14 +50,14 @@ func ValidateRequest(token string) bool {
 		return false
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("[ERROR] request error: %v", err.Error())
 		return false
 	}
 
-	if resp.StatusCode == 204 {
+	if resp.StatusCode == 204 || resp.StatusCode == 403 {
 		log.Printf("[DEBUG] GITHUB_TOKEN sucessfuly verified.")
 		return true
 	}
