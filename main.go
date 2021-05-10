@@ -101,19 +101,8 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "DELETE" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("no auth required\n"))
 	} else {
 		ctx := context.TODO()
-
-		/*
-			ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-			if err != nil {
-				log.Printf("[ERROR] Error reading namespace file: %v", err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			namespace := string(ns)
-		*/
 
 		tr := &TokenResponse{}
 
