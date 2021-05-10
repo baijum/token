@@ -99,15 +99,22 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{'error': 'Unauthorized request'}\n"))
 		return
 	}
+	ctx := context.TODO()
 	if r.Method == "DELETE" {
+		namespace := "chart-verifier-ci-" + id
+		err = clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("[ERROR] Error deleting namespace: %v", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 	} else {
-		ctx := context.TODO()
 
 		tr := &TokenResponse{}
 
 		ns := &corev1.Namespace{}
-		ns.GenerateName = "chart-verifier-ci-" + id + "-"
+		ns.Name = "chart-verifier-ci-" + id
 		ns, err = clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		if err != nil {
 			log.Printf("[ERROR] Error creating namespace: %v", err.Error())
