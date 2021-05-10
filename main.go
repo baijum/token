@@ -146,7 +146,16 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		roleBinding := &rbacv1.RoleBinding{}
+		roleBinding := &rbacv1.RoleBinding{
+			Subjects: []rbacv1.Subject{
+				{Kind: "ServiceAccount",
+					Name:      sa.Name,
+					Namespace: ns.Name},
+			},
+			RoleRef: rbacv1.RoleRef{
+				Kind: "Role",
+				Name: role.Name},
+		}
 		roleBinding.Name = "chart-verifier-ci-" + id
 		roleBinding, err = clientset.RbacV1().RoleBindings(ns.Name).Create(ctx, roleBinding, metav1.CreateOptions{})
 		if err != nil {
