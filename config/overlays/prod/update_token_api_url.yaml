@@ -3,4 +3,4 @@ apiVersion: route.openshift.io/v1
 metadata:
   name: token
 spec:
-  host: prod-chart-verifier-infra.apps.ocpappsvc-osd.zn6c.p1.openshiftapps.com
+  host: openshift-helm-charts-charts-chart-verifier-infra.apps.ocpappsvc-osd.zn6c.p1.openshiftapps.com
